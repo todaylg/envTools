@@ -1,0 +1,186 @@
+# Environment Mapping Tools
+
+Forked from https://github.com/cedricpinson/envtools
+
+A set of tools to manipulate environment for Physical Based Rendering
+
+Used for [https://todaylg.com/three-viewer/](https://todaylg.com/three-viewer/)
+
+## Environment Generation
+
+process_environment.py generates a full set of data ready to use for PBR. It calls other program to generate thumbnail/irradiance/specularggx and config file.
+At the end of the process you will have:
+- A thumbnail
+- A config file that contains the spherical harmonics
+- Cubemap / Panorama files encoded in rgbm/rgbe/luv
+
+## Build environment with docker
+
+You can get some environment from http://hdrmaps.com/freebies to test the tools
+
+Build Container:
+
+`docker build -t todaylg/envtools ./`
+
+Start:
+
+`docker run -v $(pwd):/data -t todaylg/envtools process_environment.py /data/test.hdr /data/result/`
+
+Build only lut format:
+
+`process_environment.py --nbSamples=1024 --sample-rotation 18 --write-by-channel --encoding 'luv' --fixedge --pretty --cubemap-only --approximateDirectionalLights /data/test.hdr /data/result/`
+
+Light:
+
+`docker run -v $(pwd):/data -t todaylg/envtools extractLights /data/test.hdr`
+
+## Sub Commands
+
+### Spherical Remapping
+
+This code supports reprojection and resampling between any two of the following spherical image projections. A high-resolution example image of each type is included.
+
+<table>
+<tr><td><img src="etc/thumbnail-rect.png"></td><td>The <b>rect</b> type corresponds to the equirectangular projection, much like the common map of the world. It represents the full sphere, though with significant distortion near the poles. (<a href="etc/rect.tif">Example</a>.)</td></tr>
+<tr><td><img src="etc/thumbnail-ball.png"></td><td>The <b>ball</b> type corresponds to a photograph of a mirrored sphere, or "light probe". It represents the full sphere, but with significant distortion toward the back. (<a href="etc/ball.tif">Example</a>.)</td></tr>
+<tr><td><img src="etc/thumbnail-dome.png"></td><td>The <b>dome</b> type gives a "dome master". This is an image suitable for projection onto a fulldome planetarium. The view looks up and the radius varies linearly with latitude. It represents only half of the sphere. (<a href="etc/dome.tif">Example</a>.)</td></tr>
+<tr><td><img src="etc/thumbnail-hemi.png"></td><td>The <b>hemi</b> type is mathematically identical to the dome type, though the view faces forward instead of up. This corresponds to a photograph taken with an 8mm "fisheye" lens. This too represents only half of the sphere. (<a href="etc/hemi.tif">Example</a>.)</td></tr>
+<tr><td><img src="etc/thumbnail-cube.png"></td><td>The <b>cube</b> type corresponds to an OpenGL cube map texture, and is the best choice for use in real-time 3D rendering. The TIFF contains each of the six cube faces in a separate page. The cube faithfully represents the full sphere with minimal distortion. (<a href="etc/cube.tif">Example</a>.)</td></tr>
+</table>
+
+The output is sampled using one of several sampling patterns, which give a quality-speed tradeoff.
+
+<table>
+    <tr><td><img src="etc/cent.png"></td><td><b>cent</b> &hellip; One sample at the centroid of the output pixel</td></tr>
+    <tr><td><img src="etc/rgss.png"></td><td><b>rgss</b> &hellip; Rotated-grid super sampling</td></tr>
+    <tr><td><img src="etc/box2.png"></td><td><b>box2</b> &hellip; 2 &times; 2 super sampling</td></tr>
+    <tr><td><img src="etc/box3.png"></td><td><b>box3</b> &hellip; 3 &times; 3 super sampling</td></tr>
+    <tr><td><img src="etc/box4.png"></td><td><b>box4</b> &hellip; 4 &times; 4 super sampling</td></tr>
+</table>
+
+This tool remaps the input image `src.tif` to the output `dst.tif`. The sample depth and format of the input TIFF is preserved in the output.
+
+`envremap [-i input] [-o output] [-p pattern] [-f filter] [-n n] src.tif dst.tif`
+
+- `-i input`
+
+    Input projection type. May be `ball`, `cube`, `dome`, `hemi`, or `rect`. The default is `rect`.
+
+- `-o output`
+
+    Output projection type. May be `ball`, `cube`, `dome`, `hemi`, or `rect`. The default is `rect`.
+
+- `-p pattern`
+
+    Output sampling pattern. May be `cent`, `rgss`, `box2`, `box3`, or `box4`. The default is `rgss`.
+
+- `-f filter`
+
+    Input filter type. Maybe `nearest` or `linear`. The default is `linear`.
+
+- `-n n`
+
+    Output size. Image will have size `n` &times; `n`, except `rect` which will have size 2`n` &times; `n`.
+
+### Irradiance Generation
+
+This tool generates an irradiance environment map from a given environment map and print spherical harmonics in the console. It uses the same code in CubemapGen from amd and patched by [Sebastien Lagarde](https://seblagarde.wordpress.com/2012/06/10/amd-cubemapgen-for-physically-based-rendering/).
+
+`envIrradiance [-n n] [-f toogle seamless cubemap] in.tif dst.tif`
+
+- `-n n`
+
+    Output size. The output will be a 32-bit floating point TIFF with six pages, each `n` &times; `n` in size.
+
+- `-f toogle seamless cubemap`
+
+
+### BRDF LUT generation
+
+This tool generates the brdf LUT like in [UE4](http://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf)
+
+`envBRDF [-s size] [-n samples] output.raw`
+
+- `-s size`
+
+    Output size. The output will be a rgba uint16 fixed integer.
+
+- `-n samples`
+
+    Number of samples used to generate the lut.
+
+
+### Prefilter environment
+
+This tool generates prefiltered environment like in [UE4](http://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf)
+
+`envPrefilter [-s size] [-e stopSize] [-n nbsamples] [-f toogle seamless cubemap] in.tif out.tif`
+
+- `-s size`
+
+    Output size
+
+- `-e stopSize`
+
+    This limit the size of texture used to interpolate the roughness in different LOD. For example if you limit the size to 8, the roughness will be spread between size and 8.
+
+- `-f toggle seamless cubemap`
+
+    Generate cubemap with the stretch code from amd cubemap for seamless cubemap.
+
+- `-n samples`
+
+    Number of samples used to generate the lut.
+
+
+### Background generation
+
+This tool generates cubemap environment blurred to be used as background environment
+
+`envBackground [-s size] [-n nbsamples] [-b blur angle ] [-f toggle seamless cubemap] in.tif out.tif`
+
+- `-s size`
+
+    Output size
+
+- `-b blurlevel`
+
+    The blur level is the radius angle of the cone used to make the blur
+
+- `-f toggle seamless cubemap`
+
+    Generate cubemap with the stretch code from amd cubemap for seamless cubemap.
+
+- `-n samples`
+
+    Number of samples used to generate the lut.
+
+### Lights Extractions
+
+This tool generates lights list in JSON format, extracted from the environment
+
+`extractLights [-a max_light_areas] [-l max_light_length] [-r ratioLight] [-n numCuts] [-d] [-m num_lights] file.hdr|exr`
+
+- `-m num_lights`
+
+   export JSON max number of lights and cull others. ( default is 1, 0 is unlimited)
+
+- `-a max_light_areas`
+
+   A max limit to the  Area Surface a light can have. (default 0.05)
+
+- `-l max_light_length`
+
+   A max limit to the height or width a light can have. (default 0.05)
+
+- `-r ratioLight`
+
+   a max ratio for light power can have. (default 0.5)
+
+- `-n numCuts`
+
+    Number of subdivision levers used to generate the lights list. (default is 8)
+
+- `-d`
+
+    generates a out/debug_variance.png file for debugging light cuts visually. (default is off)
