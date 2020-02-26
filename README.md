@@ -4,7 +4,7 @@ Forked from https://github.com/cedricpinson/envtools
 
 A set of tools to manipulate environment for Physical Based Rendering
 
-Used for [https://todaylg.com/three-viewer/](https://todaylg.com/three-viewer/)
+Use for [https://github.com/todaylg/three-viewer](https://github.com/todaylg/three-viewer)
 
 ## Environment Generation
 
