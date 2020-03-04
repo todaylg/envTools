@@ -28,7 +28,7 @@ Start:
 
 Build only lut format:
 
-`process_environment.py --nbSamples=1024 --sample-rotation 18 --write-by-channel --encoding 'luv' --fixedge --pretty --cubemap-only --approximateDirectionalLights /data/test.hdr /data/result/`
+`docker run -v C:\Code\C++\envTools\data:/data -t todaylg/envtools process_environment.py --nbSamples=1024 --sample-rotation 18 --write-by-channel --encoding 'luv' --approximateDirectionalLights --gz --zip --fixedge --pretty --cubemap-only /data/test.hdr /data/result/`
 
 Light:
 

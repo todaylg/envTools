@@ -84,6 +84,7 @@ class ProcessEnvironment(object):
 
         self.encoding_type = encoding
         self.input_file = os.path.abspath(input_file)
+        self.input_fileName = os.path.basename(input_file)
         self.working_directory = '/tmp/' + os.path.basename(os.path.abspath(output_directory))
         self.output_directory = output_directory
         self.pretty = kwargs.get("pretty", False)
@@ -121,9 +122,8 @@ class ProcessEnvironment(object):
         self.mipmap_size = 1024
         self.mipmap_filename = None
 
-
+        self.can_compress = True if which(compress_7Zip_cmd) != None and kwargs.get("compress_gz", False) else False
         self.can_zip = True if which(compress_zip_cmd) != None and kwargs.get("compress_zip", False) else False
-        self.can_compress = True if which(compress_7Zip_cmd) != None and self.can_zip == False else False
 
         self.export_mipmap_cubemap = False
 
@@ -205,8 +205,9 @@ class ProcessEnvironment(object):
 
     def zip(self):
         sys.stdout.write("zipping ")
-        zip_file= "{}/package.zip".format(self.working_directory)
-        cmd = "{} -r {} {}".format(compress_zip_cmd, zip_file, self.working_directory)
+        zip_file= "package.zip"
+
+        cmd = "cd {} && {} -r {} ./".format(self.working_directory, compress_zip_cmd, zip_file)
         execute_command(cmd, verbose=False)
         print ""
 
@@ -496,7 +497,7 @@ class ProcessEnvironment(object):
         img_size_x = 1024
         img_size_y = 512
         # resize
-        panorama_smaller = os.path.join(self.working_directory, "pano_small_{}.tif".format(img_size_x))
+        panorama_smaller = os.path.join("/tmp/", "pano_small_{}.tif".format(img_size_x))
         cmd = "oiiotool {} --resize {}x{} -o {}".format(
             self.panorama_highres, img_size_x, img_size_y, panorama_smaller)
         execute_command(cmd, verbose=False, print_command=True)
@@ -606,7 +607,7 @@ class ProcessEnvironment(object):
 
         # write working data into output directory
         if self.can_zip:
-            output_file = os.path.basename(self.output_directory) + ".zip"
+            output_file = os.path.basename(self.output_directory) + self.input_fileName + ".zip"
             output_dir = os.path.dirname(self.output_directory)
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
@@ -643,6 +644,8 @@ def define_arguments():
                         help="nb samples to compute background 1 to 65536", default=4096)
     parser.add_argument("--encoding", action="store", dest="encoding",
                         help="string that contains different encoding output", default="luv:rgbm:rgbe:float")
+    parser.add_argument("--gz", action="store_true", dest="compress_gz",
+                        help="compress image data")
     parser.add_argument("--zip", action="store_true", dest="compress_zip",
                         help="archive in a zip file")
     parser.add_argument("--specularSize", action="store", dest="specular_size",
@@ -676,6 +679,7 @@ def create_process_instance(args):
                                  nb_samples=int(args.nb_samples),
                                  background_blur=float(args.background_blur),
                                  write_by_channel=args.write_by_channel,
+                                 compress_gz=args.compress_gz,
                                  compress_zip=args.compress_zip,
                                  sample_rotation=args.sample_rotation,
                                  encoding=args.encoding,

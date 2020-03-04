@@ -54,7 +54,6 @@ void Cubemap::fill(const Vec4f& fillValue) {
     uint size = getSize();
     uint samplePerPixel = getSamplePerPixel();
     uint totalFloat = size * size * samplePerPixel;
-    ;
 
     for (int i = 0; i < 6; i++) {
         float* data = getImages().imageFace(i);
@@ -186,7 +185,7 @@ Cubemap* Cubemap::shFilterCubeMap(bool useSolidAngleWeighting, int fixup,
                                   int outputCubemapSize) {
     Cubemap* srcCubemap = this;
     Cubemap* dstCubemap = new Cubemap();
-    dstCubemap->init(outputCubemapSize, 3);
+    dstCubemap->init(outputCubemapSize, 3); 
 
     int srcSize = srcCubemap->getSize();
     int dstSize = dstCubemap->getSize();
