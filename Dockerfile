@@ -2,7 +2,7 @@ FROM ubuntu:18.04
 
 MAINTAINER todaylg
 
-RUN  sed -i s@/archive.ubuntu.com/@/mirrors.aliyun.com/@g /etc/apt/sources.list
+RUN  sed -i s@/archive.ubuntu.com/@/mirrors.ustc.edu.cn/@g /etc/apt/sources.list
 RUN  apt-get clean
 
 RUN apt-get -y update --fix-missing && apt-get install -y \
