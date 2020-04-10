@@ -12,6 +12,4 @@ docker exec -it containerID bash
 
 docker container prune
 
-128 4096
-
 docker run -v C:\Gallery\Code\Github\envTools/data:/data -t todaylg/envtools envBRDF -s 128 -n 1024 /data/result/brdfLUT.jpg

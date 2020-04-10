@@ -8,6 +8,10 @@
 
 #include "Math"
 
+#include <OpenImageIO/imageio.h>
+
+OIIO_NAMESPACE_USING
+
 typedef unsigned char ubyte;
 typedef unsigned int uint;
 
@@ -45,6 +49,13 @@ inline void convertVec2ToUintsetRGB(ubyte* ptr, const Vec2f& val) {
     if ( bDiff > 1e-4 )
         std::cerr << "something wrong in the lut encoding, error B " << bDiff << std::endl;
 #endif
+}
+
+inline void convertVec2ToRGB(float* ptr, const Vec2f& val) {
+    ptr[0] = val[0];
+    ptr[1] = val[1];
+
+    ptr[2] = 0.;
 }
 
 struct Worker {
@@ -269,13 +280,19 @@ struct RougnessNoVLUT {
     }
 
     int writeImage(const char* filename, int width, int height, Vec2f* buffer) {
-        ubyte* data = new ubyte[width * height * 4];
+        const int channels = 3;  // RGB
+        float* data = new float[width * height * channels];
         for (int i = 0; i < width * height; i++) {
-            convertVec2ToUintsetRGB(data + i * 4, buffer[i]);
+            convertVec2ToRGB(data + i * channels, buffer[i]);
         }
 
-        FILE* file = fopen(filename, "wb");
-        fwrite(data, width * height * 4, 1, file);
+        ImageOutput* out = ImageOutput::create(filename);
+        ImageSpec spec (width, height, channels, TypeDesc::FLOAT);
+        out->open(filename, spec);
+        out->write_image(TypeDesc::FLOAT, data);
+        out->close();
+
+        delete out;
         delete[] data;
 
         return 0;
