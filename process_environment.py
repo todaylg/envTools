@@ -580,10 +580,10 @@ class ProcessEnvironment(object):
         print ""
 
         # precompute lut brdf
-        start_tick = time.time()
-        self.compute_brdf_lut_ue4()
-        print "== {} compute_brdf_lut_ue4 ==".format(time.time() - start_tick)
-        print ""
+        # start_tick = time.time()
+        # self.compute_brdf_lut_ue4()
+        # print "== {} compute_brdf_lut_ue4 ==".format(time.time() - start_tick)
+        # print ""
 
         # register mipspecular
         if self.export_mipmap_cubemap:

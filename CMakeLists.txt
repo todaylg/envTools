@@ -84,7 +84,7 @@ install(TARGETS samplesGGX
 
 # envBRDF
 add_executable(envBRDF envBRDF.cpp)
-target_link_libraries(envBRDF ${TBB_LIBRARIES})
+target_link_libraries(envBRDF ${TBB_LIBRARIES} ${OIIO_LIBRARY})
 
 install(TARGETS envBRDF
 	RUNTIME DESTINATION bin
