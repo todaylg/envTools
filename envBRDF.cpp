@@ -129,6 +129,60 @@ struct Worker {
         return Vec2f(clampTo(A, 0.0, 1.0), clampTo(B, 0.0, 1.0));
     }
 
+    // https://google.github.io/filament/Filament.html#toc5.3.4.7
+    Vec2f integrateBRDFMultiscatter(float roughnessLinear, float NoV, const int numSamples,
+                        uint roughnessIndex) const {
+        Vec3f V;
+        V[0] = sqrt(1.0 - NoV * NoV);  // sin V.y = 0;
+        V[1] = 0.0;
+        V[2] = NoV;  // cos
+
+        Vec3f N = Vec3f(0, 0, 1);  // dont know where the normal comes from
+        // but if the view vector is generated from NoV then the normal should
+        // be fixed and 0,0,1
+
+        double A = 0.0;
+        double B = 0.0;
+
+        Vec3f UpVector = fabs(N[2]) < 0.999 ? Vec3f(0, 0, 1) : Vec3f(1, 0, 0);
+        Vec3f TangentX = normalize(cross(UpVector, N));
+        Vec3f TangentY = normalize(cross(N, TangentX));
+
+        float roughness = roughnessLinear * roughnessLinear;
+        float m = roughness;
+        float k = m * 0.5;
+
+        const Vec3f* cacheLineSampleGGX =
+            &cacheImportanceSampleGGX[roughnessIndex * numSamples];
+        Vec3f H, L;
+        for (int i = 0; i < numSamples; i++) {
+            // sample in local space
+            // Vec3f H = importanceSampleGGX( i, numSamples, roughnessLinear);
+            const Vec3f& localH = cacheLineSampleGGX[i];
+            // sample in worldspace
+            H = TangentX * localH[0] + TangentY * localH[1] + N * localH[2];
+
+            L = H * (dot(V, H) * 2.0) - V;
+
+            float NoL = saturate(L[2]);
+            float NoH = saturate(H[2]);
+            float VoH = saturate(V * H);
+
+            if (NoL > 0.0) {
+                float G = G_Schlick(NoV, NoL, k);
+                float G_Vis = G * VoH / (NoH * NoV);
+
+                float Fc = pow(1.0 - VoH, 5);
+                A += Fc * G_Vis;
+                B += G_Vis;
+            }
+        }
+        A /= numSamples;
+        B /= numSamples;
+
+        return Vec2f(clampTo(A, 0.0, 1.0), clampTo(B, 0.0, 1.0));
+    }
+
     void operator()(const tbb::blocked_range<uint>& r) const {
         float step = 1.0 / float(_size);
 
@@ -138,8 +192,7 @@ struct Worker {
             for (uint x = 0; x < _size; x++) {
                 float NoV = step * (x + 0.5);
 
-                Vec2f values =
-                    integrateBRDF(roughnessLinear, NoV, _numSamples, y);
+                Vec2f values = integrateBRDFMultiscatter(roughnessLinear, NoV, _numSamples, y);
 
 #if 0
                 // Vec2d values2 = integrateBRDF( roughness, NoV, numSamples2);
