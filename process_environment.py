@@ -294,7 +294,7 @@ class ProcessEnvironment(object):
         # create the integrateBRDF texture
         # we dont need to recreate it each time
         outout_filename = os.path.join(self.working_directory, "brdf_ue4.bin")
-        size = self.integrate_BRDF_size
+        size = self.integrate_BRDF_sizeintegrate_BRDF_size
         cmd = "{} -s {} -n {} {}".format(envIntegrateBRDF_cmd, size, self.brdf_nb_samples, outout_filename)
         execute_command(cmd)
 
@@ -580,10 +580,10 @@ class ProcessEnvironment(object):
         print ""
 
         # precompute lut brdf
-        start_tick = time.time()
-        self.compute_brdf_lut_ue4()
-        print "== {} compute_brdf_lut_ue4 ==".format(time.time() - start_tick)
-        print ""
+        # start_tick = time.time()
+        # self.compute_brdf_lut_ue4()
+        # print "== {} compute_brdf_lut_ue4 ==".format(time.time() - start_tick)
+        # print ""
 
         # register mipspecular
         if self.export_mipmap_cubemap:
